@@ -1,0 +1,13 @@
+message Foo {
+  optional int32 bar = 1;
+}
+
+message VideoCaptureSettings {
+  optional int32  width = 1;
+  optional int32  height = 2;
+  optional string preset = 3;
+  optional Foo    foo = 4;
+  repeated int32  arrwidth = 10;
+  repeated string arrpreset = 11;
+  repeated Foo    arrfoo = 12;
+}
