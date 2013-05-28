@@ -27,6 +27,7 @@ src/compiler/protoc-gen-objc
 .DS_Store
 
 # Xcode stuff
+build/
 Build/
 *.pbxuser
 *.perspective
