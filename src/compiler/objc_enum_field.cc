@@ -222,6 +222,13 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   }
 
 
+  void EnumFieldGenerator::GenerateParsingJSONCodeSource(io::Printer* printer) const {
+  }
+
+  void EnumFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* printer) const {
+  }
+
+
   string EnumFieldGenerator::GetBoxedType() const {
     return ClassName(descriptor_->enum_type());
   }
@@ -261,7 +268,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 	//	}else{
 			printer->Print(variables_, "@property (readonly, strong) PBArray * $name$;\n");
 	//	}
-    
+
   }
 
 
@@ -480,6 +487,13 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
       "  hashCode = hashCode * 31 + element.intValue;\n"
       "}\n");
   }
+
+  void RepeatedEnumFieldGenerator::GenerateParsingJSONCodeSource(io::Printer* printer) const {
+  }
+
+  void RepeatedEnumFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* printer) const {
+  }
+
 }  // namespace objectivec
 }  // namespace compiler
 }  // namespace protobuf

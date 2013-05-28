@@ -63,6 +63,8 @@ class FieldGenerator {
   virtual void GenerateDescriptionCodeSource(io::Printer* printer) const = 0;
   virtual void GenerateIsEqualCodeSource(io::Printer* printer) const = 0;
   virtual void GenerateHashCodeSource(io::Printer* printer) const = 0;
+  virtual void GenerateParsingJSONCodeSource(io::Printer* printer) const = 0;
+  virtual void GenerateSerializationJSONCodeSource(io::Printer* printer) const = 0;
 
  private:
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(FieldGenerator);

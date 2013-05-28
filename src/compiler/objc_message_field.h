@@ -58,6 +58,8 @@ class MessageFieldGenerator : public FieldGenerator {
   void GenerateDescriptionCodeSource(io::Printer* printer) const;
   void GenerateIsEqualCodeSource(io::Printer* printer) const;
   void GenerateHashCodeSource(io::Printer* printer) const;
+  void GenerateParsingJSONCodeSource(io::Printer* printer) const;
+  void GenerateSerializationJSONCodeSource(io::Printer* printer) const;
 
   string GetBoxedType() const;
 
@@ -98,6 +100,8 @@ class RepeatedMessageFieldGenerator : public FieldGenerator {
   void GenerateDescriptionCodeSource(io::Printer* printer) const;
   void GenerateIsEqualCodeSource(io::Printer* printer) const;
   void GenerateHashCodeSource(io::Printer* printer) const;
+  void GenerateParsingJSONCodeSource(io::Printer* printer) const;
+  void GenerateSerializationJSONCodeSource(io::Printer* printer) const;
 
   string GetBoxedType() const;
 

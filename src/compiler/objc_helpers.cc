@@ -438,6 +438,26 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
     return value;
   }
 
+  // TODO(walt): should we use unsigned methods here too?
+  string UnboxValue(const FieldDescriptor* field, const string& value) {
+    switch (GetObjectiveCType(field)) {
+      case OBJECTIVECTYPE_INT:
+        return "[" + value + " intValue]";
+      case OBJECTIVECTYPE_LONG:
+        return "[" + value + " longValue]";
+      case OBJECTIVECTYPE_FLOAT:
+        return "[" + value + " floatValue]";
+      case OBJECTIVECTYPE_DOUBLE:
+        return "[" + value + " doubleValue]";
+      case OBJECTIVECTYPE_BOOLEAN:
+        return "[" + value + " boolValue]";
+      case OBJECTIVECTYPE_ENUM:
+        return "[" + value + " intValue]";
+    }
+
+    return value;
+  }
+
   bool AllAscii(const string& text) {
     for (int i = 0; i < text.size(); i++) {
       if ((text[i] & 0x80) != 0) {
@@ -537,25 +557,25 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
  bool isObjectArray(const FieldDescriptor* field){
 	 switch (field->type()) {
-		  case FieldDescriptor::TYPE_STRING  : 
-	      case FieldDescriptor::TYPE_BYTES   : 
-	      case FieldDescriptor::TYPE_ENUM    : 
-	      case FieldDescriptor::TYPE_GROUP   : 
+              case FieldDescriptor::TYPE_STRING  :
+	      case FieldDescriptor::TYPE_BYTES   :
+	      case FieldDescriptor::TYPE_ENUM    :
+	      case FieldDescriptor::TYPE_GROUP   :
 	      case FieldDescriptor::TYPE_MESSAGE : return true;
-	      case FieldDescriptor::TYPE_INT32   : 
+	      case FieldDescriptor::TYPE_INT32   :
 	      case FieldDescriptor::TYPE_UINT32  :
 	      case FieldDescriptor::TYPE_SINT32  :
 	      case FieldDescriptor::TYPE_FIXED32 :
 	      case FieldDescriptor::TYPE_SFIXED32:
 	      case FieldDescriptor::TYPE_INT64   :
-	      case FieldDescriptor::TYPE_UINT64  : 
-	      case FieldDescriptor::TYPE_SINT64  : 
-	      case FieldDescriptor::TYPE_FIXED64 : 
-	      case FieldDescriptor::TYPE_SFIXED64: 
+	      case FieldDescriptor::TYPE_UINT64  :
+	      case FieldDescriptor::TYPE_SINT64  :
+	      case FieldDescriptor::TYPE_FIXED64 :
+	      case FieldDescriptor::TYPE_SFIXED64:
 	      case FieldDescriptor::TYPE_FLOAT   :
 	      case FieldDescriptor::TYPE_DOUBLE  :
 	      case FieldDescriptor::TYPE_BOOL    : return false  ;
-	      
+
 	    }
 	    GOOGLE_LOG(FATAL) << "Can't get here.";
 	    return NULL;

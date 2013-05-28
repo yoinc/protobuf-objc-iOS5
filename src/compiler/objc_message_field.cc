@@ -254,6 +254,25 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
   void MessageFieldGenerator::GenerateMembersSource(io::Printer* printer) const {
   }
 
+  void MessageFieldGenerator::GenerateParsingJSONCodeSource(io::Printer* printer) const {
+    printer->Print(variables_,
+                   "{\n"
+                   "  NSObject *x = [input objectForKey:@\"$name$\"];\n"
+                   "  if (x != nil) {\n");
+    printer->Print(variables_,
+                   "    $type$_Builder* subBuilder = [$type$ builder];\n"
+                   "    if (self.has$capitalized_name$) {\n"
+                   "      [subBuilder mergeFrom:self.$name$];\n"
+                   "    }\n");
+    printer->Print("    [subBuilder mergeFromJSON:x];\n");
+    printer->Print(variables_,
+                   "    [self set$capitalized_name$:[subBuilder buildPartial]];\n");
+    printer->Print("  }\n"
+                   "}\n");
+  }
+
+  void MessageFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* printer) const {
+  }
 
   string MessageFieldGenerator::GetBoxedType() const {
     return ClassName(descriptor_->message_type());
@@ -357,7 +376,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 		      "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array;\n"
 		      "- ($classname$_Builder *)set$capitalized_name$Values:(const $storage_type$ *)values count:(NSUInteger)count;\n"
 		      "- ($classname$_Builder *)clear$capitalized_name$;\n");
-		
+
 		}
   }
 
@@ -427,7 +446,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 	      "    [result.$list_name$ appendArray:other.$list_name$];\n"
 	      "  }\n"
       	  "}\n");
-    	
+
 	}
   }
 
@@ -489,6 +508,23 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 	}else{
     	GOOGLE_LOG(FATAL) << "Can't get here: GenerateHashCodeSource";
 	}
+  }
+
+  void RepeatedMessageFieldGenerator::GenerateParsingJSONCodeSource(io::Printer* printer) const {
+    printer->Print(variables_,
+                   "{\n"
+                   "  NSArray *x = [input objectForKey:@\"$name$\"];\n"
+                   "  if (x != nil) {\n"
+                   "    for (NSObject *el in x) {\n"
+                   "      $type$_Builder* subBuilder = [$type$ builder];\n"
+                   "      [subBuilder mergeFromJSON:el];\n"
+                   "      [self add$capitalized_name$:[subBuilder buildPartial]];\n"
+                   "    }\n"
+                   "  }\n"
+                   "}\n");
+  }
+
+  void RepeatedMessageFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* printer) const {
   }
 
   string RepeatedMessageFieldGenerator::GetBoxedType() const {

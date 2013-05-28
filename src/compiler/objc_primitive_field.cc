@@ -80,7 +80,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
         case FieldDescriptor::TYPE_ENUM    : return "object";
         case FieldDescriptor::TYPE_GROUP   : return "object";
         case FieldDescriptor::TYPE_MESSAGE : return "object";
-*/    
+*/
   }
 
       GOOGLE_LOG(FATAL) << "Can't get here.";
@@ -108,7 +108,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
         case FieldDescriptor::TYPE_ENUM    : return "Object";
         case FieldDescriptor::TYPE_GROUP   : return "Object";
         case FieldDescriptor::TYPE_MESSAGE : return "Object";
-*/  
+*/
     }
 
       GOOGLE_LOG(FATAL) << "Can't get here.";
@@ -200,8 +200,8 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 			(*variables)["array_value_type_name"] = GetArrayValueTypeName(descriptor);
 			 (*variables)["array_value_type_name_cap"] = GetCapitalizedArrayValueTypeName(descriptor);
 		}
-        
-       
+
+
 
         (*variables)["default"] = DefaultValue(descriptor);
         (*variables)["capitalized_type"] = GetCapitalizedType(descriptor);
@@ -418,6 +418,20 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
       "}\n");
   }
 
+void PrimitiveFieldGenerator::GenerateParsingJSONCodeSource(io::Printer* printer) const {
+  printer->Print(variables_,
+                 "{\n"
+                 "  id x = [input objectForKey:@\"$name$\"];\n"
+                 "  if (x != nil) [self set$capitalized_name$:");
+  printer->Print(UnboxValue(descriptor_, "x").c_str());
+  printer->Print("];\n"
+                 "}\n");
+}
+
+void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* printer) const {
+
+}
+
   RepeatedPrimitiveFieldGenerator::RepeatedPrimitiveFieldGenerator(const FieldDescriptor* descriptor)
     : descriptor_(descriptor) {
       SetPrimitiveVariables(descriptor, &variables_);
@@ -518,7 +532,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 	      "}\n"
 	      "- ($storage_type$)$name$AtIndex:(NSUInteger)index {\n"
 	      "  return [$list_name$ $array_value_type_name$AtIndex:index];\n"
-	      "}\n");		
+	      "}\n");
 	}
   }
 
@@ -740,6 +754,24 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
         "}\n");
     }
   }
+
+  void RepeatedPrimitiveFieldGenerator::GenerateParsingJSONCodeSource(io::Printer* printer) const {
+    printer->Print(variables_,
+                   "{\n"
+                   "  NSArray *x = [input objectForKey:@\"$name$\"];\n"
+                   "  if (x != nil) {\n"
+                   "    for (NSObject *el in x) {\n"
+                   "      [self add$capitalized_name$:");
+    printer->Print(UnboxValue(descriptor_, "el").c_str());
+    printer->Print("];\n"
+                   "     }\n"
+                   "   }\n"
+                   "}\n");
+  }
+
+  void RepeatedPrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* printer) const {
+  }
+
 }  // namespace objectivec
 }  // namespace compiler
 }  // namespace protobuf

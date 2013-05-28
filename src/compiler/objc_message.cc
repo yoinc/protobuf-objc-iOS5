@@ -472,6 +472,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
     GenerateCommonBuilderMethodsHeader(printer);
     GenerateBuilderParsingMethodsHeader(printer);
+    GenerateBuilderJSONParsingMethodsHeader(printer);
 
     for (int i = 0; i < descriptor_->field_count(); i++) {
       printer->Print("\n");
@@ -525,6 +526,13 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
       "- ($classname$_Builder*) mergeFromCodedInputStream:(PBCodedInputStream*) input;\n"
       "- ($classname$_Builder*) mergeFromCodedInputStream:(PBCodedInputStream*) input extensionRegistry:(PBExtensionRegistry*) extensionRegistry;\n",
       "classname", ClassName(descriptor_));
+  }
+
+
+  void MessageGenerator::GenerateBuilderJSONParsingMethodsHeader(io::Printer* printer) {
+    printer->Print(
+        "- ($classname$_Builder*) mergeFromJSON:(id) input;\n",
+        "classname", ClassName(descriptor_));
   }
 
 
@@ -847,6 +855,7 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
     GenerateCommonBuilderMethodsSource(printer);
     GenerateBuilderParsingMethodsSource(printer);
+    GenerateBuilderJSONParsingMethodsSource(printer);
 
     for (int i = 0; i < descriptor_->field_count(); i++) {
       field_generators_.get(descriptor_->field(i)).GenerateBuilderMembersSource(printer);
@@ -929,6 +938,25 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
       "  return self;\n"
       "}\n");
   }
+
+
+// TODO(walt): support unknown fields or add warning.
+void MessageGenerator::GenerateBuilderJSONParsingMethodsSource(io::Printer* printer) {
+  scoped_array<const FieldDescriptor*> sorted_fields(
+      SortFieldsByNumber(descriptor_));
+  printer->Print(
+      "- ($classname$_Builder*) mergeFromJSON:(id) input {\n",
+      "classname", ClassName(descriptor_));
+  printer->Indent();
+
+  for (int i = 0; i < descriptor_->field_count(); i++) {
+    const FieldDescriptor* field = sorted_fields[i];
+    field_generators_.get(field).GenerateParsingJSONCodeSource(printer);
+  }
+
+  printer->Outdent();
+  printer->Print("}\n");
+}
 
 
   void MessageGenerator::GenerateBuilderParsingMethodsSource(io::Printer* printer) {

@@ -93,6 +93,9 @@ class MessageGenerator {
   void GenerateBuilderParsingMethodsSource(io::Printer* printer);
   void GenerateIsInitializedSource(io::Printer* printer);
 
+  void GenerateBuilderJSONParsingMethodsHeader(io::Printer* printer);
+  void GenerateBuilderJSONParsingMethodsSource(io::Printer* printer);
+
   const Descriptor* descriptor_;
   FieldGeneratorMap field_generators_;
 
