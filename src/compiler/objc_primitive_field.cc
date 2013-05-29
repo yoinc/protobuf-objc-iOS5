@@ -36,6 +36,23 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
 
   namespace {
 
+    // Add a key to a map while this object is in scope; remove when out of scope.
+    class ScopedAddKey {
+     public:
+      ScopedAddKey(map<string, string>* m, const string& key, const string& val) :
+          map_(m), key_(key) {
+        (*map_)[key] = val;
+      }
+
+      ~ScopedAddKey() {
+        map_->erase(key_);
+      }
+
+     private:
+      map<string, string>* map_;
+      string key_;
+    };
+
     const char* PrimitiveTypeName(const FieldDescriptor* field) {
       switch (field->type()) {
         case FieldDescriptor::TYPE_INT32   : return "int32_t" ;
@@ -195,13 +212,17 @@ namespace google { namespace protobuf { namespace compiler { namespace objective
           }
         }
 
-		if(!isObjectArray(descriptor)){
-        	(*variables)["array_value_type"] = GetArrayValueType(descriptor);
-			(*variables)["array_value_type_name"] = GetArrayValueTypeName(descriptor);
-			 (*variables)["array_value_type_name_cap"] = GetCapitalizedArrayValueTypeName(descriptor);
-		}
-
-
+        if (isObjectArray(descriptor)) {
+          (*variables)["array_type"] = "NSArray *";
+          (*variables)["mutable_array_type"] = "NSMutableArray *";
+          (*variables)["array_value_type_name"] = "object";  // objectAtIndex
+        } else {
+          (*variables)["array_type"] = "PBArray *";
+          (*variables)["mutable_array_type"] = "PBAppendableArray *";
+          (*variables)["array_value_type"] = GetArrayValueType(descriptor);
+          (*variables)["array_value_type_name"] = GetArrayValueTypeName(descriptor);
+          (*variables)["array_value_type_name_cap"] = GetCapitalizedArrayValueTypeName(descriptor);
+        }
 
         (*variables)["default"] = DefaultValue(descriptor);
         (*variables)["capitalized_type"] = GetCapitalizedType(descriptor);
@@ -447,7 +468,7 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
 
 
   void RepeatedPrimitiveFieldGenerator::GenerateFieldHeader(io::Printer* printer) const {
-    printer->Print(variables_, "PBAppendableArray * $list_name$;\n");
+    printer->Print(variables_, "$mutable_array_type$ $list_name$;\n");
     if (descriptor_->options().packed()) {
       printer->Print(variables_,
         "int32_t $name$MemoizedSerializedSize;\n");
@@ -460,12 +481,12 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
 
 
   void RepeatedPrimitiveFieldGenerator::GeneratePropertyHeader(io::Printer* printer) const {
-    printer->Print(variables_, "@property (readonly, strong) PBArray * $name$;\n");
+    printer->Print(variables_, "@property (readonly, strong) $mutable_array_type$ $name$;\n");
   }
 
 
   void RepeatedPrimitiveFieldGenerator::GenerateExtensionSource(io::Printer* printer) const {
-    printer->Print(variables_, "@property (strong) PBAppendableArray * $list_name$;\n");
+    printer->Print(variables_, "@property (strong) $mutable_array_type$ $list_name$;\n");
   }
 
 
@@ -485,11 +506,15 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
 
   void RepeatedPrimitiveFieldGenerator::GenerateBuilderMembersHeader(io::Printer* printer) const {
     printer->Print(variables_,
-      "- (PBAppendableArray *)$name$;\n"
+      "- ($mutable_array_type$)$name$;\n"
       "- ($storage_type$)$name$AtIndex:(NSUInteger)index;\n"
       "- ($classname$_Builder *)add$capitalized_name$:($storage_type$)value;\n"
-      "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array;\n"
-      "- ($classname$_Builder *)set$capitalized_name$Values:(const $storage_type$ *)values count:(NSUInteger)count;\n"
+      "- ($classname$_Builder *)set$capitalized_name$Array:(NSArray *)array;\n");
+    if (!isObjectArray(descriptor_)) {
+      printer->Print(variables_,
+        "- ($classname$_Builder *)set$capitalized_name$Values:(const $storage_type$ *)values count:(NSUInteger)count;\n");
+    }
+    printer->Print(variables_,
       "- ($classname$_Builder *)clear$capitalized_name$;\n");
   }
 
@@ -516,24 +541,13 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
 
 
   void RepeatedPrimitiveFieldGenerator::GenerateMembersSource(io::Printer* printer) const {
-	//check if object array vs primitive array
-	if(isObjectArray(descriptor_)){
-		printer->Print(variables_,
-	      "- (NSArray *)$name$ {\n"
-	      "  return $list_name$;\n"
-	      "}\n"
-	      "- ($storage_type$)$name$AtIndex:(NSUInteger)index {\n"
-	      "  return [$list_name$ objectAtIndex:index];\n"
-	      "}\n");
-	}else{
-		printer->Print(variables_,
-	      "- (PBArray *)$name$ {\n"
-	      "  return $list_name$;\n"
-	      "}\n"
-	      "- ($storage_type$)$name$AtIndex:(NSUInteger)index {\n"
-	      "  return [$list_name$ $array_value_type_name$AtIndex:index];\n"
-	      "}\n");
-	}
+    printer->Print(variables_,
+                   "- ($array_type$)$name$ {\n"
+                   "  return $list_name$;\n"
+                   "}\n"
+                   "- ($storage_type$)$name$AtIndex:(NSUInteger)index {\n"
+                   "  return [$list_name$ $array_value_type_name$AtIndex:index];\n"
+                   "}\n");
   }
 
   void RepeatedPrimitiveFieldGenerator::GenerateBuilderMembersSource(io::Printer* printer) const {
@@ -655,29 +669,22 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
 
   void RepeatedPrimitiveFieldGenerator::GenerateSerializationCodeSource(io::Printer* printer) const {
     printer->Print(variables_,
-      "const NSUInteger $list_name$Count = self.$list_name$.count;\n"
-      "if ($list_name$Count > 0) {\n"
-      "  const $storage_type$ *values = (const $storage_type$ *)self.$list_name$.data;\n");
+                   "const NSUInteger $list_name$Count = self.$list_name$.count;\n"
+                   "if ($list_name$Count > 0) {\n");
     printer->Indent();
 
     if (descriptor_->options().packed()) {
       printer->Print(variables_,
-        "[output writeRawVarint32:$tag$];\n"
-        "[output writeRawVarint32:$name$MemoizedSerializedSize];\n"
-        "for (NSUInteger i = 0; i < $list_name$Count; ++i) {\n"
-        "  [output write$capitalized_type$NoTag:values[i]];\n"
-        "}\n");
+                     "[output writeRawVarint32:$tag$];\n"
+                     "[output writeRawVarint32:$name$MemoizedSerializedSize];\n");
+      LoopOverArray(printer, "[output write$capitalized_type$NoTag:values[i]];");
     } else {
-      printer->Print(variables_,
-        "for (NSUInteger i = 0; i < $list_name$Count; ++i) {\n"
-        "  [output write$capitalized_type$:$number$ value:values[i]];\n"
-        "}\n");
+      LoopOverArray(printer, "[output write$capitalized_type$:$number$ value:$loop_el$];");
     }
 
     printer->Outdent();
     printer->Print("}\n");
   }
-
 
   void RepeatedPrimitiveFieldGenerator::GenerateSerializedSizeCodeSource(io::Printer* printer) const {
     printer->Print("{\n");
@@ -688,11 +695,7 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
       "const NSUInteger count = self.$list_name$.count;\n");
 
     if (FixedSize(descriptor_->type()) == -1) {
-      printer->Print(variables_,
-        "const $storage_type$ *values = (const $storage_type$ *)self.$list_name$.data;\n"
-        "for (NSUInteger i = 0; i < count; ++i) {\n"
-        "  dataSize += compute$capitalized_type$SizeNoTag(values[i]);\n"
-        "}\n");
+      LoopOverArray(printer, "dataSize += compute$capitalized_type$SizeNoTag($loop_el$);");
     } else {
       printer->Print(variables_,
         "dataSize = $fixed_size$ * count;\n");
@@ -743,7 +746,7 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
   void RepeatedPrimitiveFieldGenerator::GenerateHashCodeSource(io::Printer* printer) const {
     if (ReturnsPrimitiveType(descriptor_)) {
       printer->Print(variables_,
-		"listCount=self.$list_name$.count;\n"
+	"listCount=self.$list_name$.count;\n"
         "for(int i=0;i<listCount;i++){\n"
 	        "hashCode = hashCode * 31 + [self.$list_name$ $array_value_type_name$AtIndex:i];\n"
         "}\n");
@@ -756,14 +759,14 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
   }
 
   void RepeatedPrimitiveFieldGenerator::GenerateParsingJSONCodeSource(io::Printer* printer) const {
+    ScopedAddKey k1(&variables_, "unboxed", UnboxValue(descriptor_, "el"));
+    ScopedAddKey k2(&variables_, "boxedtype", BoxedPrimitiveTypeName(GetObjectiveCType(descriptor_)));
     printer->Print(variables_,
                    "{\n"
                    "  NSArray *x = [input objectForKey:@\"$name$\"];\n"
                    "  if (x != nil) {\n"
-                   "    for (NSObject *el in x) {\n"
-                   "      [self add$capitalized_name$:");
-    printer->Print(UnboxValue(descriptor_, "el").c_str());
-    printer->Print("];\n"
+                   "    for ($boxedtype$ *el in x) {\n"
+                   "      [self add$capitalized_name$:$unboxed$];\n"
                    "     }\n"
                    "   }\n"
                    "}\n");
@@ -771,6 +774,25 @@ void PrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* p
 
   void RepeatedPrimitiveFieldGenerator::GenerateSerializationJSONCodeSource(io::Printer* printer) const {
   }
+
+// Print a loop over the field with 'body' as the body of the loop; the element is '$loop_el$'.
+void RepeatedPrimitiveFieldGenerator::LoopOverArray(io::Printer* printer, const string& body) const {
+  if (isObjectArray(descriptor_)) {
+    ScopedAddKey k(&variables_, "loop_el", "el");
+    string x = "for ($storage_type$ el in self.$list_name$) {\n"
+               " " + body + "\n"
+               "}\n";
+    printer->Print(variables_, x.c_str());
+  } else {
+    ScopedAddKey k(&variables_, "loop_el", "values[i]");
+    string x = "const $storage_type$ *values = (const $storage_type$ *)self.$list_name$.data;\n"
+               "const NSUInteger alen = self.$list_name$.count;\n"
+               "for (NSUInteger i = 0; i < alen; ++i) {\n"
+               "  " + body + "\n"
+               "}\n";
+    printer->Print(variables_, x.c_str());
+  }
+}
 
 }  // namespace objectivec
 }  // namespace compiler

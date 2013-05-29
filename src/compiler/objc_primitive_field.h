@@ -102,8 +102,10 @@ class RepeatedPrimitiveFieldGenerator : public FieldGenerator {
   void GenerateSerializationJSONCodeSource(io::Printer* printer) const;
 
  private:
+  void LoopOverArray(io::Printer* printer, const string& body) const;
+
   const FieldDescriptor* descriptor_;
-  map<string, string> variables_;
+  mutable map<string, string> variables_;
 
   GOOGLE_DISALLOW_EVIL_CONSTRUCTORS(RepeatedPrimitiveFieldGenerator);
 };

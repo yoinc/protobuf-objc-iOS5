@@ -954,6 +954,7 @@ void MessageGenerator::GenerateBuilderJSONParsingMethodsSource(io::Printer* prin
     field_generators_.get(field).GenerateParsingJSONCodeSource(printer);
   }
 
+  printer->Print("return self;\n");
   printer->Outdent();
   printer->Print("}\n");
 }
