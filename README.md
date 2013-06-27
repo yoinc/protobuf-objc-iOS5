@@ -9,6 +9,18 @@ This project is based on an implementation of Protocol Buffers from Google.  See
 [g-protobuf]: http://code.google.com/p/protobuf/
 [protobuf-objc]: https://github.com/booyah/protobuf-objc
 
+# To Build:
+
+```
+$ ./autogen.sh
+$ mkdir build
+$ cd build
+$ ../configure
+$ make
+```
+
+Now the compiler is in src/compiler/protoc-gen-objc.
+
 # Credits
 
 Regwez Inc.
