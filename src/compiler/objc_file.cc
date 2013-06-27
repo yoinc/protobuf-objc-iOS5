@@ -29,6 +29,24 @@
 #include "objc_helpers.h"
 #include "objc_message.h"
 
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))
+
+// Files to ignore for #import. Hacky, but we don't want to #import these in
+// the generated files.
+static const char* kIgnoreImports[] = {
+  "pb_options.proto",  // TODO: we really shouldn't have this here
+  "google/protobuf/objectivec-descriptor.proto",
+};
+
+static bool ShouldIgnoreImport(const std::string& name) {
+  for (int j = 0; j < ARRAY_SIZE(kIgnoreImports); j++) {
+    if (name.compare(kIgnoreImports[j]) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
 namespace google { namespace protobuf { namespace compiler {namespace objectivec {
 
   FileGenerator::FileGenerator(const FileDescriptor* file)
@@ -53,11 +71,9 @@ namespace google { namespace protobuf { namespace compiler {namespace objectivec
 
     if (file_->dependency_count() > 0) {
       for (int i = 0; i < file_->dependency_count(); i++) {
-        if (file_->dependency(i)->name() == "google/protobuf/objectivec-descriptor.proto") {
-          // hacky, but we don't need to #import this file, it's just for compiling.
+        if (ShouldIgnoreImport(file_->dependency(i)->name())) {
           continue;
         }
-
         printer->Print(
           "#import \"$header$.pb.h\"\n",
           "header", FilePath(file_->dependency(i)));
@@ -188,11 +204,9 @@ namespace google { namespace protobuf { namespace compiler {namespace objectivec
       "[self registerAllExtensions:registry];\n");
 
     for (int i = 0; i < file_->dependency_count(); i++) {
-      if (file_->dependency(i)->name() == "google/protobuf/objectivec-descriptor.proto") {
-        // hacky, but we don't need to #import this file, it's just for compiling.
+      if (ShouldIgnoreImport(file_->dependency(i)->name())) {
         continue;
       }
-
       printer->Print(
         "[$dependency$ registerAllExtensions:registry];\n",
         "dependency", FileClassName(file_->dependency(i)));
